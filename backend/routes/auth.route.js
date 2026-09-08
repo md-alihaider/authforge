@@ -12,6 +12,7 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.post("/logout", logout);
 
+//email verification routes
 router.post("/verify-email",verifyEmail);
 
 export default router;
