@@ -1,11 +1,52 @@
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import FloatingShape from "./components/FloatingShape";
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
+import { Toaster } from "react-hot-toast";
+import { useAuthStore } from "./store/authStore";
+import { useEffect } from "react";
+import { Loader } from "lucide-react";
+
+//protect routes that require authentication and redirect to login page if user is not authenticated
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!user.isVarified) {
+    return <Navigate to="/verify-email" replace />;
+  }
+  return children;
+};
+
+//redirect  authenticated users to home page
+const RedirectAuthenticatedUser = ({ children }) => {
+  const { isAuthenticated, user, isCheckingAuth } = useAuthStore();
+
+  if (isCheckingAuth)
+    return (
+      <div>
+        <Loader className=" animate-spin mx-auto" size={24} />
+      </div>
+    );
+
+  if (isAuthenticated && user.isVarified) return <Navigate to="/" replace />;
+  {
+    return children;
+  }
+};
 
 const App = () => {
+  const { checkAuth, isCheckingAuth, isAuthenticated, user } = useAuthStore();
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  console.log("isAuthenticated", isAuthenticated);
+  console.log("user", user);
   return (
     <div
       className="min-h-screen bg-linear-to-br
@@ -34,11 +75,33 @@ const App = () => {
       />
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <RedirectAuthenticatedUser>
+              <SignUpPage />
+            </RedirectAuthenticatedUser>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <RedirectAuthenticatedUser>
+              <LoginPage />
+            </RedirectAuthenticatedUser>
+          }
+        />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
       </Routes>
+      <Toaster />
     </div>
   );
 };
